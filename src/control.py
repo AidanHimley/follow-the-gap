@@ -1,0 +1,52 @@
+#!/usr/bin/env python
+import rospy
+from gap.msg import gap_info
+from ackermann_msgs.msg import AckermannDrive
+from collections import deque
+
+class Controller():
+
+	def __init__(self, servo_offset=0.0):
+		# initialize node
+		rospy.init_node('car7/controller', anonymous=True)
+
+		# This code can input desired velocity from the user.
+		# velocity must be between [0,100] to move forward. 
+		# The following velocity values correspond to different speed profiles.
+		# 15: Very Slow (Good for debug mode)
+		# 25: Slow and steady
+		# 35: Nice Autonomous Pace
+		# > 40: Careful, what you do here. Only use this if your autonomous steering is very reliable.
+		# this is used as max velocity for dynamic velocity
+		self.max_velocity = float(input("Enter desired maximum velocity: "))
+		self.min_velocity = 15
+
+		# zero correction offset in case servo is misaligned and has a bias in turning.
+		self.servo_offset = servo_offset
+
+		# initialize subscriber and publisher (do this after parameters have been set)
+		rospy.Subscriber('car7/gap_info', gap_info, self.control)
+		self.command_pub = rospy.Publisher('/car_7/offboard/command', AckermannDrive, queue_size = 1)
+
+		rospy.spin()
+
+	def control(self, data):
+		angle = 0
+
+		#----------------control logic goes here-------------------
+
+		# An empty AckermannDrive message is created. You will populate the steering_angle and the speed fields.
+		command = AckermannDrive()
+
+		# Make sure the steering value is within bounds [-100,100]
+		command.steering_angle = max(-100, min(angle, 100))
+
+		# Make sure the velocity is within bounds [0,100]
+		velocity = ((100 - abs(command.steering_angle))/100)**2 * ((self.max_velocity - self.min_velocity)) + self.min_velocity
+		command.speed = max(0, min(velocity, 100))
+
+		# Move the car autonomously
+		self.command_pub.publish(command)
+
+if __name__ == '__main__':
+	Controller()
