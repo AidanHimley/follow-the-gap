@@ -18,6 +18,8 @@ class GapFinder():
 		# Some useful variable declarations.
 		self.ANGLE_RANGE = 240			# Hokuyo 4LX has 240 degrees FoV for scan
 		self.CAR_LENGTH = 0.50			# Traxxas Rally is 20 inches or 0.5 meters
+		self.safety_radius = 0.5
+		self.disparity_threshold = 0.5
 		
 		rospy.spin()
 
@@ -35,10 +37,15 @@ class GapFinder():
 				ranges[i] = data.range_max
 		return ranges
 
+	def disparityExtender(self, ranges):
+		for i in range(len(ranges)):
+			pass
 
 	def callback(self, data):
 
 		#-------------------gap-finding logic goes here------------------------
+		ranges = self.getRanges(data)
+		angles = np.array([math.degrees(data.angle_min + i*data.angle_increment) for i in len(ranges)]) - 90
 
 		msg = gap_info()		# An empty msg is created of the type gap_info
 		msg.angle = ...			# position of the center of the selected gap
