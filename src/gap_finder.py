@@ -18,7 +18,7 @@ class GapFinder():
 		# Some useful variable declarations.
 		self.ANGLE_RANGE = 240			# Hokuyo 4LX has 240 degrees FoV for scan
 		self.CAR_LENGTH = 0.50			# Traxxas Rally is 20 inches or 0.5 meters
-		self.safety_radius = 0.5
+		self.safety_radius = 0.25
 		self.disparity_threshold = 0.5
 		
 		rospy.spin()
@@ -37,9 +37,21 @@ class GapFinder():
 				ranges[i] = data.range_max
 		return ranges
 
-	def disparityExtender(self, ranges):
-		for i in range(len(ranges)):
-			pass
+	def disparityExtender(self, ranges, angles, angle_increment):
+		widest_gap_width = 0
+		widest_gap_start = np.argmin(abs(angles))
+		latest_gap_start = 0
+		for i in range(1, len(ranges)):
+			if abs(ranges[i]-ranges[i-1]) > self.disparity_threshold:
+				disparity_index = i if ranges[i] < ranges[i-1] else i-1
+				delta_i = int((self.safety_radius/ranges[disparity_index])/angle_increment)
+				disparity_start = min(0, disparity_index-delta_i)
+				if disparity_start-latest_gap_start > widest_gap_width:
+					widest_gap_width = disparity_start - latest_gap_start
+					widest_gap_start = latest_gap_start
+				latest_gap_start = disparity_index + delta_i + 1
+		target_index = np.argmax(ranges[widest_gap_start : widest_gap_start+widest_gap_width])
+		return angles[target_index], widest_gap_width*angle_increment, ranges[target_index]
 
 	def callback(self, data):
 
