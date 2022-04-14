@@ -37,7 +37,7 @@ class GapFinder():
 				ranges[i] = data.range_max
 		return ranges
 
-	def disparityExtender(self, ranges, angles, angle_increment):
+	def disparityExtenderWidest(self, ranges, angles, angle_increment):
 		widest_gap_width = 0
 		widest_gap_start = np.argmin(abs(angles))
 		latest_gap_start = 0
@@ -45,13 +45,33 @@ class GapFinder():
 			if abs(ranges[i]-ranges[i-1]) > self.disparity_threshold:
 				disparity_index = i if ranges[i] < ranges[i-1] else i-1
 				delta_i = int((self.safety_radius/ranges[disparity_index])/angle_increment)
-				disparity_start = min(0, disparity_index-delta_i)
+				disparity_start = max(0, disparity_index-delta_i)
 				if disparity_start-latest_gap_start > widest_gap_width:
 					widest_gap_width = disparity_start - latest_gap_start
 					widest_gap_start = latest_gap_start
 				latest_gap_start = disparity_index + delta_i + 1
 		target_index = np.argmax(ranges[widest_gap_start : widest_gap_start+widest_gap_width])
 		return angles[target_index], widest_gap_width*angle_increment, ranges[target_index]
+	
+	def disparityExtenderDeepest(self, ranges, angles, angle_increment):
+		for i in range(1, len(ranges)):
+			if abs(ranges[i] - ranges[i-1]) > self.disparity_threshold:
+				disparity_index = i if ranges[i] < ranges[i-1] else i-1
+				delta_i = int((self.safety_radius/ranges[disparity_index])/angle_increment)
+				for j in range(max(0, disparity_index-delta_i), min(len(ranges), disparity_index+delta_i)):
+					ranges[j] = 0
+		candidate_indices = (ranges==np.max(ranges)).nonzero()[0]
+		target_index = candidate_indices[np.argmin(abs(angles[candidate_indices]))]		# lol
+		width = 1
+		i = target_index-1
+		while ranges[i] != 0 and i>=0:
+			width += 1
+			i -= 1
+		i = target_index+1
+		while ranges[i] != 0 and i<len(ranges):
+			width += 1
+			i += 1
+		return angles[target_index], width*angle_increment, ranges[target_index]
 
 	def callback(self, data):
 
