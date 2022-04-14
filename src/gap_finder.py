@@ -3,6 +3,7 @@ import rospy
 import math
 from sensor_msgs.msg import LaserScan
 from gap.msg import gap_info
+import numpy as np
 
 class GapFinder():
 
@@ -20,22 +21,20 @@ class GapFinder():
 		
 		rospy.spin()
 
-	def getRange(self, data, angle):
+	def getRanges(self, data):
 		"""data: single message from topic /scan
 		angle: between -30 to 210 degrees, where 0 degrees is directly to the right, and 90 degrees is directly in front
 		Outputs length in meters to object with angle in lidar scan field of view\n
 		Cleans NaNs etc"""
-		if (angle < -30 or angle > 210):
-			return data.range_max
-		
-		angle = math.radians(angle)
-		
-		index = int((angle+math.radians(30)) / data.angle_increment)
-		range = data.ranges[index]
 
-		if (range and range < data.range_max):
-			return range
-		return data.range_max
+		ranges = np.array(data.ranges)
+
+
+		for i in range(len(ranges)):
+			if not (ranges[i] and ranges[i] < data.range_max):
+				ranges[i] = data.range_max
+		return ranges
+
 
 	def callback(self, data):
 
