@@ -34,7 +34,12 @@ class Controller():
 		angle = 0
 
 		#----------------control logic goes here-------------------
-
+		#Based on what I understand here of what I'm getting, the calculations are being done in 
+		#Gapfinder, with the angle being fed in relative to the car, so therefore all that needs to be
+		#done here is setting the angle. It is also 5am, I am running on very little sleep, and just 
+		#want today to kind of end
+		angle = data.angle
+		
 		# An empty AckermannDrive message is created. You will populate the steering_angle and the speed fields.
 		command = AckermannDrive()
 
