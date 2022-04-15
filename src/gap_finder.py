@@ -80,6 +80,15 @@ class GapFinder():
 			i += 1
 		return angles[target_index], width*angle_increment, ranges[target_index]
 
+	def bubble(self, ranges, angles, angle_increment):
+		disparities = []
+		min_index = np.argmin(ranges)
+		min_range = ranges[min_index]
+		ang = math.arctan(self.safety_radius/min_range)
+		rb = int(ang / angle_increment)
+		for i in range(min_index - rb, min_index + rb + 1):
+			ranges[i] = 0
+
 	def callback(self, data):
 
 		#-------------------gap-finding logic goes here------------------------
