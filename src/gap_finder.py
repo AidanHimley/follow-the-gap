@@ -11,15 +11,15 @@ class GapFinder():
 		print("Hokuyo LIDAR node started")
 		
 		# initialize node, subscriber, and publisher
-		rospy.init_node('car7/gap_finder', anonymous = True)
+		rospy.init_node('gap_finder', anonymous = True)
 		rospy.Subscriber("/car_7/scan", LaserScan, self.callback)
-		self.pub = rospy.Publisher('car7/error', gap_info, queue_size=10)
+		self.pub = rospy.Publisher('/car7/error', gap_info, queue_size=10)
 
 		# Some useful variable declarations.
 		self.ANGLE_RANGE = 240			# Hokuyo 4LX has 240 degrees FoV for scan
 		self.CAR_LENGTH = 0.50			# Traxxas Rally is 20 inches or 0.5 meters
-		self.safety_radius = 0.25
-		self.disparity_threshold = 0.5
+		self.safety_radius = 0.1
+		self.disparity_threshold = 0.3
 		
 		rospy.spin()
 
@@ -29,37 +29,44 @@ class GapFinder():
 		Outputs length in meters to object with angle in lidar scan field of view\n
 		Cleans NaNs etc"""
 
-		ranges = np.array(data.ranges)
+		ranges = []
+		angles = []
 
-
-		for i in range(len(ranges)):
-			if not (ranges[i] and ranges[i] < data.range_max):
-				ranges[i] = data.range_max
-		return ranges
+		for i in range(len(data.ranges)):
+			if (data.ranges[i] and data.ranges[i] < data.range_max):
+				ranges.append(data.ranges[i])
+				angles.append(math.degrees(data.angle_min + i*data.angle_increment))
+		return np.array(ranges), np.array(angles)
 
 	def disparityExtenderWidest(self, ranges, angles, angle_increment):
 		widest_gap_width = 0
 		widest_gap_start = np.argmin(abs(angles))
 		latest_gap_start = 0
+		disparities = []
 		for i in range(1, len(ranges)):
 			if abs(ranges[i]-ranges[i-1]) > self.disparity_threshold:
 				disparity_index = i if ranges[i] < ranges[i-1] else i-1
+				disparities.append(angles[disparity_index])
 				delta_i = int((self.safety_radius/ranges[disparity_index])/angle_increment)
 				disparity_start = max(0, disparity_index-delta_i)
 				if disparity_start-latest_gap_start > widest_gap_width:
 					widest_gap_width = disparity_start - latest_gap_start
 					widest_gap_start = latest_gap_start
 				latest_gap_start = disparity_index + delta_i + 1
+		rospy.loginfo("Seeing " + str(len(disparities)) + " disparities at angles:\n" + str(disparities))
 		target_index = np.argmax(ranges[widest_gap_start : widest_gap_start+widest_gap_width])
 		return angles[target_index], widest_gap_width*angle_increment, ranges[target_index]
 	
 	def disparityExtenderDeepest(self, ranges, angles, angle_increment):
+		disparities = []
 		for i in range(1, len(ranges)):
 			if abs(ranges[i] - ranges[i-1]) > self.disparity_threshold:
 				disparity_index = i if ranges[i] < ranges[i-1] else i-1
+				disparities.append(angles[disparity_index])
 				delta_i = int((self.safety_radius/ranges[disparity_index])/angle_increment)
 				for j in range(max(0, disparity_index-delta_i), min(len(ranges), disparity_index+delta_i)):
 					ranges[j] = 0
+		rospy.loginfo("Seeing " + str(len(disparities)) + " disparities at angles:\n" + str(disparities))
 		candidate_indices = (ranges==np.max(ranges)).nonzero()[0]
 		target_index = candidate_indices[np.argmin(abs(angles[candidate_indices]))]		# lol
 		width = 1
@@ -76,14 +83,17 @@ class GapFinder():
 	def callback(self, data):
 
 		#-------------------gap-finding logic goes here------------------------
-		ranges = self.getRanges(data)
-		angles = np.array([math.degrees(data.angle_min + i*data.angle_increment) for i in len(ranges)]) - 90
+		rospy.loginfo("raw angles are " + str(data.angle_min) + " to " + str(data.angle_max))
+		ranges, angles = self.getRanges(data)
+		rospy.loginfo("angles are " + str(angles[0]) + " to " + str(angles[-1]))
 
 		msg = gap_info()		# An empty msg is created of the type gap_info
-		msg.angle = ...			# position of the center of the selected gap
-		msg.width = ...			# width of the selected gap
-		msg.depth = ...			# depth of the selected gap
-		self.pub.publish(msg)
+		# msg.angle = ...			# position of the center of the selected gap
+		# msg.width = ...			# width of the selected gap
+		# msg.depth = ...			# depth of the selected gap
+		msg.angle, msg.width, msg.depth = self.disparityExtenderWidest(ranges, angles, data.angle_increment)
+		rospy.loginfo("Aiming for gap at " + str(msg.angle) + " with width " + str(msg.width) + " and depth" + str(msg.depth))
+		# self.pub.publish(msg)
 
 if __name__ == '__main__':
 	GapFinder()
