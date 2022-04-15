@@ -1,5 +1,4 @@
 <launch>
-	<include file="$(find move_base)/launch/move_base.launch" />
 	<node pkg="gap" name="control" type="control.py" />
 	<node pkg="gap" name="gap_finder" type="gap_finder.py" />
 </launch>
