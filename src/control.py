@@ -38,7 +38,8 @@ class Controller():
 		#Gapfinder, with the angle being fed in relative to the car, so therefore all that needs to be
 		#done here is setting the angle. It is also 5am, I am running on very little sleep, and just 
 		#want today to kind of end
-		angle = data.angle
+                # -120 to 120 is the angle range, so divide by 1.2 to be between -100 and 100
+		angle = data.angle/1.2
 		
 		# An empty AckermannDrive message is created. You will populate the steering_angle and the speed fields.
 		command = AckermannDrive()
