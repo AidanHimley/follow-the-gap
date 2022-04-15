@@ -48,7 +48,16 @@ class Controller():
 		command.steering_angle = max(-100, min(angle, 100))
 
 		# Make sure the velocity is within bounds [0,100]
-		velocity = ((100 - abs(command.steering_angle))/100)**2 * ((self.max_velocity - self.min_velocity)) + self.min_velocity
+		#velocity = ((100 - abs(command.steering_angle))/100)**2 / (data.depth) * ((self.max_velocity - self.min_velocity)) + self.min_velocity
+		
+		# Alternative piecewise depth scaling approach
+		if data.depth < .5:
+			velocity = ((100 - abs(command.steering_angle))/100)**2 * (data.depth/2) * ((self.max_velocity - self.min_velocity)) + self.min_velocity
+		elif data.depth < 1:
+			velocity = ((100 - abs(command.steering_angle))/100)**2 * (data.depth) * ((self.max_velocity - self.min_velocity)) + self.min_velocity
+		else:
+			velocity = ((100 - abs(command.steering_angle))/100)**2 / (data.depth/5) * ((self.max_velocity - self.min_velocity)) + self.min_velocity
+
 		command.speed = max(0, min(velocity, 100))
 
 		# Move the car autonomously
