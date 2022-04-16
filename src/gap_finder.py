@@ -52,7 +52,8 @@ class GapFinder():
 				if disparity_start-latest_gap_start > widest_gap_width:
 					widest_gap_width = disparity_start - latest_gap_start
 					widest_gap_start = latest_gap_start
-				latest_gap_start = disparity_index + delta_i + 1
+				latest_gap_start = max(disparity_index + delta_i + 1, latest_gap_start)
+				print("disparity bubble from indices " + str(disparity_start) + " to " + str(latest_gap_start))
 		# check gap at end of array because it doesn't end in a disparity
 		if len(ranges) - latest_gap_start > widest_gap_width:
 			widest_gap_width = len(ranges) - latest_gap_start
@@ -112,7 +113,7 @@ class GapFinder():
 
 if __name__ == '__main__':
 	gf = GapFinder()
-	ranges = np.array([1, 1, 1, 2, 2, 2, 2.1, 2, 2, 2, 2])
+	ranges = np.array([0.007, 1, 1, 2, 2, 2, 2.1, 2, 2, 2, 2])
 	angles = np.linspace(-10, 10, 11)
 	print("ranges: " + str(ranges) + "\nangles: " + str(angles))
 	inc = 2
