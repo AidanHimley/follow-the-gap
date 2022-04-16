@@ -11,9 +11,9 @@ class GapFinder():
 		print("Hokuyo LIDAR node started")
 		
 		# initialize node, subscriber, and publisher
-		# rospy.init_node('gap_finder', anonymous = True)
-		# rospy.Subscriber("/car_7/scan", LaserScan, self.callback)
-		# self.pub = rospy.Publisher('/car7/error', gap_info, queue_size=10)
+		rospy.init_node('gap_finder', anonymous = True)
+		rospy.Subscriber("/car_7/scan", LaserScan, self.callback)
+		self.pub = rospy.Publisher('/car7/error', gap_info, queue_size=10)
 
 		# Some useful variable declarations.
 		self.ANGLE_RANGE = 240			# Hokuyo 4LX has 240 degrees FoV for scan
@@ -21,7 +21,7 @@ class GapFinder():
 		self.safety_radius = 0.1
 		self.disparity_threshold = 0.3
 		
-		#rospy.spin()
+		rospy.spin()
 
 	def getRanges(self, data):
 		"""data: single message from topic /scan
@@ -68,8 +68,7 @@ class GapFinder():
 				disparity_index = i if ranges[i] < ranges[i-1] else i-1
 				delta_i = int((self.safety_radius/ranges[disparity_index])/angle_increment)
 				disparities.append((disparity_index, delta_i))
-		# rospy.loginfo("Seeing " + str(len(disparities)) + " disparities at angles:\n" + str(disparities))
-		print("Seeing " + str(len(disparities)) + " disparities at indices:\n" + str(disparities))
+		rospy.loginfo("Seeing " + str(len(disparities)) + " disparities at angles:\n" + str(disparities))
 		for disparity_index, delta_i in disparities:
 			for j in range(max(0, disparity_index-delta_i), min(len(ranges), disparity_index+delta_i+1)):
 				ranges[j] = 0
@@ -111,10 +110,4 @@ class GapFinder():
 		# self.pub.publish(msg)
 
 if __name__ == '__main__':
-	gf = GapFinder()
-	ranges = np.array([1, 2.2, 1, 1, 1, 2, 2, 2, 2.1, 2, 2])
-	angles = np.linspace(-10, 10, 11)
-	print("ranges: " + str(ranges) + "\nangles: " + str(angles))
-	inc = 2
-	angle, width, depth = gf.disparityExtenderWidest(ranges, angles, math.radians(inc))
-	print("Aiming for gap at " + str(angle) + " with width " + str(width) + " and depth " + str(depth))
+	GapFinder()
