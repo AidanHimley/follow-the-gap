@@ -53,39 +53,38 @@ class GapFinder():
 					widest_gap_width = disparity_start - latest_gap_start
 					widest_gap_start = latest_gap_start
 				latest_gap_start = max(disparity_index + delta_i + 1, latest_gap_start)
-				print("disparity bubble from indices " + str(disparity_start) + " to " + str(latest_gap_start))
 		# check gap at end of array because it doesn't end in a disparity
 		if len(ranges) - latest_gap_start > widest_gap_width:
 			widest_gap_width = len(ranges) - latest_gap_start
 			widest_gap_start = latest_gap_start
-		# rospy.loginfo("Seeing " + str(len(disparities)) + " disparities at angles:\n" + str(disparities))
-		print("Seeing " + str(len(disparities)) + " disparities at angles:\n" + str(disparities))
+		rospy.loginfo("Seeing " + str(len(disparities)) + " disparities at angles:\n" + str(disparities))
 		target_index = widest_gap_start + np.argmax(ranges[widest_gap_start : widest_gap_start+widest_gap_width])
-		return angles[target_index], widest_gap_width*angle_increment, ranges[target_index]
+		return angles[target_index], widest_gap_width*math.degrees(angle_increment), ranges[target_index]
 	
 	def disparityExtenderDeepest(self, ranges, angles, angle_increment):
 		disparities = []
 		for i in range(1, len(ranges)):
 			if abs(ranges[i] - ranges[i-1]) > self.disparity_threshold:
 				disparity_index = i if ranges[i] < ranges[i-1] else i-1
-				disparities.append(angles[disparity_index])
 				delta_i = int((self.safety_radius/ranges[disparity_index])/angle_increment)
-				for j in range(max(0, disparity_index-delta_i), min(len(ranges), disparity_index+delta_i)):
-					ranges[j] = 0
+				disparities.append((disparity_index, delta_i))
 		# rospy.loginfo("Seeing " + str(len(disparities)) + " disparities at angles:\n" + str(disparities))
-		print("Seeing " + str(len(disparities)) + " disparities at angles:\n" + str(disparities))
+		print("Seeing " + str(len(disparities)) + " disparities at indices:\n" + str(disparities))
+		for disparity_index, delta_i in disparities:
+			for j in range(max(0, disparity_index-delta_i), min(len(ranges), disparity_index+delta_i+1)):
+				ranges[j] = 0
 		candidate_indices = (ranges==np.max(ranges)).nonzero()[0]
 		target_index = candidate_indices[np.argmin(abs(angles[candidate_indices]))]		# lol
 		width = 1
 		i = target_index-1
-		while ranges[i] != 0 and i>=0:
+		while i>=0 and ranges[i] != 0:
 			width += 1
 			i -= 1
 		i = target_index+1
-		while ranges[i] != 0 and i<len(ranges):
+		while i<len(ranges) and ranges[i] != 0:
 			width += 1
 			i += 1
-		return angles[target_index], width*angle_increment, ranges[target_index]
+		return angles[target_index], width*math.degrees(angle_increment), ranges[target_index]
 
 	def bubble(self, ranges, angles, angle_increment):
 		disparities = []
@@ -113,9 +112,9 @@ class GapFinder():
 
 if __name__ == '__main__':
 	gf = GapFinder()
-	ranges = np.array([0.007, 1, 1, 2, 2, 2, 2.1, 2, 2, 2, 2])
+	ranges = np.array([1, 2.2, 1, 1, 1, 2, 2, 2, 2.1, 2, 2])
 	angles = np.linspace(-10, 10, 11)
 	print("ranges: " + str(ranges) + "\nangles: " + str(angles))
 	inc = 2
-	angle, width, depth = gf.disparityExtenderWidest(ranges, angles, inc)
+	angle, width, depth = gf.disparityExtenderWidest(ranges, angles, math.radians(inc))
 	print("Aiming for gap at " + str(angle) + " with width " + str(width) + " and depth " + str(depth))
