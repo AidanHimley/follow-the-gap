@@ -59,8 +59,7 @@ class GapFinder():
 			widest_gap_start = latest_gap_start
 		# rospy.loginfo("Seeing " + str(len(disparities)) + " disparities at angles:\n" + str(disparities))
 		print("Seeing " + str(len(disparities)) + " disparities at angles:\n" + str(disparities))
-		print("widest gap start: " + str(widest_gap_start) + "\twidest gap width: " + str(widest_gap_width))
-		target_index = np.argmax(ranges[widest_gap_start : widest_gap_start+widest_gap_width])
+		target_index = widest_gap_start + np.argmax(ranges[widest_gap_start : widest_gap_start+widest_gap_width])
 		return angles[target_index], widest_gap_width*angle_increment, ranges[target_index]
 	
 	def disparityExtenderDeepest(self, ranges, angles, angle_increment):
@@ -113,8 +112,9 @@ class GapFinder():
 
 if __name__ == '__main__':
 	gf = GapFinder()
-	ranges = np.array([1]*11)
+	ranges = np.array([1, 1, 1, 2, 2, 2, 2.1, 2, 2, 2, 2])
 	angles = np.linspace(-10, 10, 11)
+	print("ranges: " + str(ranges) + "\nangles: " + str(angles))
 	inc = 2
 	angle, width, depth = gf.disparityExtenderWidest(ranges, angles, inc)
 	print("Aiming for gap at " + str(angle) + " with width " + str(width) + " and depth " + str(depth))
