@@ -13,7 +13,7 @@ class GapFinder():
 		# initialize node, subscriber, and publisher
 		rospy.init_node('gap_finder', anonymous = True)
 		rospy.Subscriber("/car_7/scan", LaserScan, self.callback)
-		self.pub = rospy.Publisher('/car7/error', gap_info, queue_size=10)
+		self.pub = rospy.Publisher('/car7/gap_info', gap_info, queue_size=10)
 
 		# Some useful variable declarations.
 		self.ANGLE_RANGE = 240			# Hokuyo 4LX has 240 degrees FoV for scan
@@ -107,7 +107,7 @@ class GapFinder():
 		# msg.depth = ...			# depth of the selected gap
 		msg.angle, msg.width, msg.depth = self.disparityExtenderWidest(ranges, angles, data.angle_increment)
 		rospy.loginfo("Aiming for gap at " + str(msg.angle) + " with width " + str(msg.width) + " and depth" + str(msg.depth))
-		# self.pub.publish(msg)
+		self.pub.publish(msg)
 
 if __name__ == '__main__':
 	GapFinder()

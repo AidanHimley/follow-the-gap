@@ -25,7 +25,7 @@ class Controller():
 		self.servo_offset = servo_offset
 
 		# initialize subscriber and publisher (do this after parameters have been set)
-		rospy.Subscriber('car7/gap_info', gap_info, self.control)
+		rospy.Subscriber('/car7/gap_info', gap_info, self.control)
 		self.command_pub = rospy.Publisher('/car_7/offboard/command', AckermannDrive, queue_size = 1)
 
 		rospy.spin()
@@ -39,7 +39,7 @@ class Controller():
 		#done here is setting the angle. It is also 5am, I am running on very little sleep, and just 
 		#want today to kind of end
                 # -120 to 120 is the angle range, so divide by 1.2 to be between -100 and 100
-		angle = data.angle/1.2
+		angle = data.angle*2
 		
 		# An empty AckermannDrive message is created. You will populate the steering_angle and the speed fields.
 		command = AckermannDrive()
@@ -48,9 +48,10 @@ class Controller():
 		command.steering_angle = max(-100, min(angle, 100))
 
 		# Make sure the velocity is within bounds [0,100]
-		velocity = ((100 - abs(command.steering_angle))/100)**2 * ((self.max_velocity - self.min_velocity)) + self.min_velocity
+		# velocity = ((100 - abs(command.steering_angle))/100)**2 * ((self.max_velocity - self.min_velocity)) + self.min_velocity
+		velocity = self.max_velocity
 		command.speed = max(0, min(velocity, 100))
-
+		rospy.loginfo("commanding speed " + command.speed + " and angle " + command.steering_angle)
 		# Move the car autonomously
 		self.command_pub.publish(command)
 
