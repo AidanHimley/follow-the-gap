@@ -47,7 +47,7 @@ class GapFinder():
 			if abs(ranges[i]-ranges[i-1]) > self.disparity_threshold:
 				disparity_index = i if ranges[i] < ranges[i-1] else i-1
 				disparities.append(angles[disparity_index])
-				delta_i = int((self.safety_radius/ranges[disparity_index])/angle_increment)
+				delta_i = int((self.safety_radius/(ranges[disparity_index]+self.CAR_LENGTH/2))/angle_increment)
 				disparity_start = max(0, disparity_index-delta_i)
 				if disparity_start-latest_gap_start > widest_gap_width:
 					widest_gap_width = disparity_start - latest_gap_start
@@ -66,7 +66,7 @@ class GapFinder():
 		for i in range(1, len(ranges)):
 			if abs(ranges[i] - ranges[i-1]) > self.disparity_threshold:
 				disparity_index = i if ranges[i] < ranges[i-1] else i-1
-				delta_i = int((self.safety_radius/ranges[disparity_index])/angle_increment)
+				delta_i = int((self.safety_radius/(ranges[disparity_index]+self.CAR_LENGTH/2))/angle_increment)
 				disparities.append((disparity_index, delta_i))
 		rospy.loginfo("Seeing " + str(len(disparities)) + " disparities at angles:\n" + str(disparities))
 		for disparity_index, delta_i in disparities:
