@@ -8,7 +8,7 @@ class Controller():
 
 	def __init__(self, servo_offset=0.0):
 		# initialize node
-		rospy.init_node('car7/controller', anonymous=True)
+		rospy.init_node('controller', anonymous=True)
 
 		# This code can input desired velocity from the user.
 		# velocity must be between [0,100] to move forward. 
