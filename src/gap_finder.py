@@ -63,29 +63,39 @@ class GapFinder():
 	
 	def disparityExtenderDeepest(self, ranges, angles, angle_increment):
 		disparities = []
-		for i in range(1, len(ranges)):
-			if abs(ranges[i] - ranges[i-1]) > self.disparity_threshold:
-				disparity_index = i if ranges[i] < ranges[i-1] else i-1
+		for gap_start in range(1, len(ranges)):
+			if abs(ranges[gap_start] - ranges[gap_start-1]) > self.disparity_threshold:
+				disparity_index = gap_start if ranges[gap_start] < ranges[gap_start-1] else gap_start-1
 				delta_i = int((self.safety_radius/(ranges[disparity_index]+self.CAR_LENGTH/2))/angle_increment)
 				disparities.append((disparity_index, delta_i))
 		disparity_angles = [angles[disparity[0]] for disparity in disparities]
 		rospy.loginfo("Seeing " + str(len(disparities)) + " disparities at angles:\n" + str(disparity_angles))
+		
+		# if no disparities, use bubble algorithm instead
+		if len(disparities) == 0:
+			return self.bubble(ranges, angles, angle_increment)
+		
 		for disparity_index, delta_i in disparities:
 			for j in range(max(0, disparity_index-delta_i), min(len(ranges), disparity_index+delta_i+1)):
 				ranges[j] = 0
-		rospy.loginfo(ranges)
+		# rospy.loginfo(ranges)
+
+		# find deepest gap, closest to straight ahead as tiebreaker
 		candidate_indices = (ranges==np.max(ranges)).nonzero()[0]
-		target_index = candidate_indices[np.argmin(abs(angles[candidate_indices]))]		# lol
-		width = 1
-		i = target_index-1
-		while i>=0 and ranges[i] != 0:
-			width += 1
-			i -= 1
-		i = target_index+1
-		while i<len(ranges) and ranges[i] != 0:
-			width += 1
-			i += 1
-		return angles[target_index], width*math.degrees(angle_increment), ranges[target_index]
+		deepest_index = candidate_indices[np.argmin(abs(angles[candidate_indices]))]		# lol
+		
+		# find start and end of gap
+		gap_start = deepest_index
+		while gap_start>=0 and ranges[gap_start] != 0:
+			gap_start -= 1
+		gap_end = deepest_index+1
+		while gap_end<len(ranges) and ranges[gap_end] != 0:
+			gap_end += 1
+		
+		# aim for the center of the gap, calculate width
+		target_index = gap_start + int((gap_end-gap_start)/2)
+		width=gap_end-gap_start
+		return angles[target_index], width*math.degrees(angle_increment), ranges[deepest_index]
 
 	def bubble(self, ranges, angles, angle_increment):
 		min_index = np.argmin(ranges)
@@ -114,7 +124,7 @@ class GapFinder():
 		# msg.angle = ...			# position of the center of the selected gap
 		# msg.width = ...			# width of the selected gap
 		# msg.depth = ...			# depth of the selected gap
-		msg.angle, msg.width, msg.depth = self.bubble(ranges, angles, data.angle_increment)
+		msg.angle, msg.width, msg.depth = self.disparityExtenderDeepest(ranges, angles, data.angle_increment)
 		# for i in range(len(angles)):
 		# 	print("angle: " + str(angles[i]) + "\trange: " + str(ranges[i]))
 		# print(len(angles))
