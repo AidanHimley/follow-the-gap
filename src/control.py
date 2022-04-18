@@ -51,7 +51,7 @@ class Controller():
 		# velocity = ((100 - abs(command.steering_angle))/100)**2 * ((self.max_velocity - self.min_velocity)) + self.min_velocity
 		velocity = self.max_velocity
 		command.speed = max(0, min(velocity, 100))
-		rospy.loginfo("commanding speed " + command.speed + " and angle " + command.steering_angle)
+		rospy.loginfo("commanding speed " + str(command.speed) + " and angle " + str(command.steering_angle))
 		# Move the car autonomously
 		self.command_pub.publish(command)
 
